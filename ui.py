@@ -12,6 +12,59 @@ from kivy.graphics import Color, Rectangle
 from kivy.utils import get_color_from_hex
 from kivy.uix.scrollview import ScrollView
 
+
+class MainMenu(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        with self.canvas.before:
+            Color(0.1, 0.1, 0.2, 1)  # тёмно-синий фон
+            self.rect = Rectangle(size=self.size, pos=self.pos)
+            self.bind(size=self._update_rect, pos=self._update_rect)
+            layout = BoxLayout(orientation='vertical', padding=20, spacing=10)
+            # Заголовок с эффектом свечения (используем markup)
+            title = Label(
+                text='[color=ffd966]🔮[/color] [color=ffffff]Нумеролог[/color]',
+                font_size=48,
+                markup=True,
+                size_hint_y=None,
+                height=120,
+                color=(1, 1, 1, 1)
+            )
+            layout.add_widget(title)
+            # Стиль для кнопок
+            btn_style = {
+                'size_hint_y': None,
+                'height': 70,
+                'font_size': 24,
+                'background_color': get_color_from_hex('#4a2c5c'),
+                'color': get_color_from_hex('#ffd966'),
+                'background_normal': ''
+            }
+            # Кнопка "Полный расчёт"
+            btn_calc = Button(text='✨ Полный расчёт', **btn_style)
+            btn_calc.bind(on_press=lambda x: setattr(self.manager, 'current', 'report'))
+
+            # Кнопка "Выход"
+            btn_exit = Button(text='🚪 Выход', **btn_style)
+            btn_exit.bind(on_press=lambda x: App.get_running_app().stop())
+
+            layout.add_widget(btn_calc)
+            layout.add_widget(btn_exit)
+
+        self.add_widget(layout)
+
+    def _update_rect(self, instance, value):
+        self.rect.pos = instance.pos
+        self.rect.size = instance.size
+
+    def on_press(self, action):
+        if action == "exit":
+            App.get_running_app().stop()
+        else:
+            self.manager.current = action
+
+
+
 class StyledButton(Button):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -53,59 +106,99 @@ class BaseScreen(Screen):
         anim.start(popup)
 
 
-class MainMenu(Screen):
+class ReportScreen(BaseScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         with self.canvas.before:
-            Color(0.1, 0.1, 0.2, 1)  # тёмно-синий фон
+            Color(0.15, 0.1, 0.25, 1)
             self.rect = Rectangle(size=self.size, pos=self.pos)
-            self.bind(size=self._update_rect, pos=self._update_rect)
-            layout = BoxLayout(orientation='vertical', padding=20, spacing=10)
-            layout.add_widget(Label(
-                text="🔮 Нумеролог", font_size=48, color=get_color_from_hex('#FFD966'),
-                size_hint_y=None, height=100
-            ))
-            # Используем StyledButton
-            for text, screen in [("Полный расчёт", "report"), ("Выход", "exit")]:
-                btn = StyledButton(text=text)
-                btn.bind(on_press=lambda i, s=screen: self.on_press(s))
-                layout.add_widget(btn)
-            self.add_widget(layout)
+        self.bind(size=self._update_rect, pos=self._update_rect)
+
+        layout = BoxLayout(orientation='vertical', padding=30, spacing=15)
+
+        title = Label(
+            text='[color=ffd966]🔮 Введите данные[/color]',
+            font_size=36,
+            markup=True,
+            size_hint_y=None,
+            height=80
+        )
+        layout.add_widget(title)
+
+        # Поле для имени
+        layout.add_widget(Label(
+            text='Имя:',
+            font_size=20,
+            halign='left',
+            size_hint_y=None,
+            height=30,
+            color=get_color_from_hex('#ffd966')
+        ))
+        self.name_input = TextInput(
+            multiline=False,
+            font_size=22,
+            height=50,
+            size_hint_y=None,
+            hint_text='Например: Юрий',
+            background_color=(0.3, 0.2, 0.4, 1),
+            foreground_color=(1,1,1,1),
+            cursor_color=(1,1,1,1)
+        )
+        layout.add_widget(self.name_input)
+
+        # Поле для даты
+        layout.add_widget(Label(
+            text='Дата рождения:',
+            font_size=20,
+            halign='left',
+            size_hint_y=None,
+            height=30,
+            color=get_color_from_hex('#ffd966')
+        ))
+        self.date_input = TextInput(
+            multiline=False,
+            font_size=22,
+            height=50,
+            size_hint_y=None,
+            hint_text='дд.мм.гггг',
+            background_color=(0.3, 0.2, 0.4, 1),
+            foreground_color=(1,1,1,1),
+            cursor_color=(1,1,1,1)
+        )
+        layout.add_widget(self.date_input)
+
+        # Кнопка расчёта
+        btn_calc = Button(
+            text='🔮 Рассчитать',
+            size_hint_y=None,
+            height=70,
+            font_size=24,
+            background_color=get_color_from_hex('#4a2c5c'),
+            color=get_color_from_hex('#ffd966'),
+            background_normal=''
+        )
+        btn_calc.bind(on_press=self.calculate)
+        layout.add_widget(btn_calc)
+
+        # Кнопка назад
+        btn_back = Button(
+            text='Назад',
+            size_hint_y=None,
+            height=60,
+            font_size=20,
+            background_color=get_color_from_hex('#2a1a3a'),
+            color=get_color_from_hex('#ffd966'),
+            background_normal=''
+        )
+        btn_back.bind(on_press=lambda x: setattr(self.manager, 'current', 'main'))
+        layout.add_widget(btn_back)
+
+        self.add_widget(layout)
 
     def _update_rect(self, instance, value):
         self.rect.pos = instance.pos
         self.rect.size = instance.size
 
-    def on_press(self, action):
-        if action == "exit":
-            App.get_running_app().stop()
-        else:
-            self.manager.current = action
-
-
-class ReportScreen(BaseScreen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        layout = BoxLayout(orientation='vertical', padding=15, spacing=15)
-
-        layout.add_widget(Label(text="Имя:", font_size=20, size_hint_y=None, height=40))
-        self.name_input = TextInput(multiline=False, font_size=22, height=50, size_hint_y=None,
-                                    hint_text="Например: Алексей")
-        layout.add_widget(self.name_input)
-
-        layout.add_widget(Label(text="Дата рождения:", font_size=20, size_hint_y=None, height=40))
-        self.date_input = TextInput(multiline=False, font_size=22, height=50, size_hint_y=None, hint_text="дд.мм.гггг")
-        layout.add_widget(self.date_input)
-
-        btn = Button(text="✨ Рассчитать", size_hint_y=None, height=70, font_size=24)
-        btn.bind(on_press=self.calculate)
-        layout.add_widget(btn)
-
-        back = Button(text="Назад", size_hint_y=None, height=60, font_size=20, background_color=(0.4, 0.4, 0.4, 1))
-        back.bind(on_press=lambda x: setattr(self.manager, 'current', 'main'))
-        layout.add_widget(back)
-
-        self.add_widget(layout)
 
     def calculate(self, instance):
         name = self.name_input.text.strip()
@@ -117,37 +210,5 @@ class ReportScreen(BaseScreen):
         self.show_popup("🌟 Ваш нумерологический портрет", report)
 
 
-# # Пустые заглушки для других экранов (можно расширить позже)
-# class LifePathScreen(BaseScreen):
-#     def __init__(self, **kwargs):
-#         super().__init__(**kwargs)
-#         layout = BoxLayout(orientation='vertical', padding=20, spacing=20)
-#         layout.add_widget(Label(text="Экран 'Число жизненного пути'\n(в разработке)", font_size=24))
-#         back = Button(text="Назад", size_hint_y=None, height=60, font_size=20)
-#         back.bind(on_press=lambda x: setattr(self.manager, 'current', 'main'))
-#         layout.add_widget(back)
-#         self.add_widget(layout)
-#
-#
-# class SoulNumberScreen(BaseScreen):
-#     def __init__(self, **kwargs):
-#         super().__init__(**kwargs)
-#         layout = BoxLayout(orientation='vertical', padding=20, spacing=20)
-#         layout.add_widget(Label(text="Экран 'Число души'\n(в разработке)", font_size=24))
-#         back = Button(text="Назад", size_hint_y=None, height=60, font_size=20)
-#         back.bind(on_press=lambda x: setattr(self.manager, 'current', 'main'))
-#         layout.add_widget(back)
-#         self.add_widget(layout)
-#
-#
-# class MindNumberScreen(BaseScreen):
-#     def __init__(self, **kwargs):
-#         super().__init__(**kwargs)
-#         layout = BoxLayout(orientation='vertical', padding=20, spacing=20)
-#         layout.add_widget(Label(text="Экран 'Число ума'\n(в разработке)", font_size=24))
-#         back = Button(text="Назад", size_hint_y=None, height=60, font_size=20)
-#         back.bind(on_press=lambda x: setattr(self.manager, 'current', 'main'))
-#         layout.add_widget(back)
-#         self.add_widget(layout)
 
 
