@@ -30,3 +30,24 @@ FadeTransition – плавное появление/исчезновение.
 CardTransition – эффект, похожий на перелистывание карт.
 NoTransition – без анимации (по умолчанию).
 """
+
+# cd /home/stalin/EGOROV/numerology_app
+# source venv/bin/activate
+# python main.py
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
