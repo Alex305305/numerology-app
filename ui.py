@@ -20,48 +20,70 @@ from space_background import SpaceBackground
 class MainMenu(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        # Космический фон
         self.background = SpaceBackground()
         self.add_widget(self.background)
 
-        layout = BoxLayout(orientation='vertical', padding=20, spacing=15)
-        # Заголовок с эффектом свечения (используем markup)
+        # Затемняющий слой для читаемости кнопок
+        with self.canvas.after:
+            Color(0, 0, 0, 0.3)  # полупрозрачный чёрный
+            self.dim = Rectangle(size=self.size, pos=self.pos)
+        self.bind(size=self._update_dim, pos=self._update_dim)
+
+        # Контейнер для кнопок
+        layout = BoxLayout(orientation='vertical', padding=40, spacing=20)
+        layout.size_hint = (0.8, 0.7)
+        layout.pos_hint = {'center_x': 0.5, 'center_y': 0.5}
+
+        # Заголовок с эффектом свечения
         title = Label(
-            text='[color=ffd966] [/color] [color=ffffff]Нумеролог[/color]',
+            text='[color=ffd966]🔮[/color] [color=ffffff]Нумеролог[/color]',
             font_size=48,
             markup=True,
             size_hint_y=None,
-            height=120,
-            color=(1, 1, 1, 1)
+            height=100
         )
         layout.add_widget(title)
-        # Стиль для кнопок
-        btn_style = {
-            'size_hint_y': None,
-            'height': 70,
-            'font_size': 24,
-            'background_color': get_color_from_hex('#4a2c5c'),
-            'color': get_color_from_hex('#ffd966'),
-            'background_normal': ''
-        }
-        # Кнопка "Полный расчёт"
-        btn_calc = Button(text=' Полный расчёт', **btn_style)
-        btn_calc.bind(on_press=lambda x: setattr(self.manager, 'current', 'report'))
-        layout.add_widget(btn_calc)
 
-        btn_compat = Button(text=' Совместимость', **btn_style)
-        btn_compat.bind(on_press=lambda x: setattr(self.manager, 'current', 'compatibility'))
-        layout.add_widget(btn_compat)
+        # Кнопки
+        buttons = [
+            ("✨ Полный расчёт", "report"),
+            ("💞 Совместимость", "compatibility"),
+            ("📜 История", "history"),
+            ("🌠 Выход", "exit")
+        ]
 
-        # Кнопка "Выход"
-        btn_exit = Button(text=' Выход', **btn_style)
-        btn_exit.bind(on_press=lambda x: App.get_running_app().stop())
-        layout.add_widget(btn_exit)
+        self.buttons = []
+        for text, screen in buttons:
+            btn = Button(
+                text=text,
+                size_hint_y=None,
+                height=60,
+                font_size=24,
+                background_normal='',
+                background_color=(0.2, 0.1, 0.3, 0.8),
+                color=(1, 1, 0.9, 1)
+            )
+            btn.bind(on_press=lambda x, s=screen: self.on_press(s))
+            layout.add_widget(btn)
+            self.buttons.append(btn)
 
         self.add_widget(layout)
 
-    def _update_rect(self, instance, value):
-        self.rect.pos = instance.pos
-        self.rect.size = instance.size
+        # Анимация появления кнопок
+        self.animate_buttons()
+
+    def animate_buttons(self):
+        for i, btn in enumerate(self.buttons):
+            btn.opacity = 0
+            btn.y -= 50
+            anim = Animation(opacity=1, y=btn.y + 50, duration=0.5, t='out_elastic')
+            anim.start(btn)
+
+    def _update_dim(self, *args):
+        self.dim.pos = self.pos
+        self.dim.size = self.size
 
     def on_press(self, action):
         if action == "exit":
@@ -121,6 +143,41 @@ class BaseScreen(Screen):
         self.sep_rect.pos = instance.pos
         self.sep_rect.size = instance.size
 
+
+class HistoryScreen(BaseScreen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.history = HistoryManager()
+
+        layout = BoxLayout(orientation='vertical', padding=20, spacing=10)
+
+        # Заголовок
+        layout.add_widget(Label(
+            text="📜 История расчётов",
+            font_size=32,
+            size_hint_y=None,
+            height=60
+        ))
+
+        # Список истории
+        self.history_list = ListView()
+        layout.add_widget(self.history_list)
+
+        # Кнопка назад
+        back_btn = Button(
+            text="Назад",
+            size_hint_y=None,
+            height=50
+        )
+        back_btn.bind(on_press=lambda x: setattr(self.manager, 'current', 'main'))
+        layout.add_widget(back_btn)
+
+        self.add_widget(layout)
+        self.load_history()
+
+    def load_history(self):
+        # Здесь будем загружать записи
+        pass
 
 from space_background import SpaceBackground
 
