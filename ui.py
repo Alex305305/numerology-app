@@ -13,6 +13,7 @@ from kivy.graphics import Color, Rectangle, RoundedRectangle
 from kivy.utils import get_color_from_hex
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.checkbox import CheckBox
+from kivy.clock import Clock
 from space_background import SpaceBackground
 
 
@@ -81,21 +82,34 @@ class StyledButton(Button):
 
 # Затем в MainMenu вместо обычных Button используй StyledButton
 
+
 class BaseScreen(Screen):
     def show_popup(self, title, text):
+        scroll = ScrollView()
+        label = Label(
+            text=text,
+            font_size=14,
+            halign='left',
+            valign='top',
+            text_size=(self.width * 0.8, None),
+            size_hint_y=None,
+            color=(1, 1, 1, 1)
+        )
+        label.bind(texture_size=lambda instance, value: setattr(instance, 'height', value[1]))
+        scroll.add_widget(label)
+        content = BoxLayout(orientation='vertical')
+        content.add_widget(scroll)
         popup = Popup(
             title=title,
-            content=Label(
-                text=text,
-                font_size=14,
-                halign='left',
-                valign='top',
-                text_size=(450, None)
-            ),
-            size_hint=(0.9, 0.9)
+            content=content,
+            size_hint=(0.9, 0.9),
+            background_color=get_color_from_hex('#2A0B3A')
         )
         popup.open()
-
+        # Анимация
+        anim = Animation(scale=1, duration=0.3) + Animation(scale=1, duration=0.1)
+        popup.scale = 0.5
+        anim.start(popup)
 
     def _update_bg(self, instance, value):
         """Обновляет позицию и размер фона при изменении контейнера"""
