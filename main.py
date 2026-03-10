@@ -7,34 +7,39 @@
 
 from kivy.app import App
 from ui import MainMenu, ReportScreen, CompatibilityScreen, HistoryScreen
-from kivy.uix.screenmanager import ScreenManager, FadeTransition
+from kivy.uix.screenmanager import ScreenManager, FadeTransition, SlideTransition, WipeTransition
 from kivy.clock import Clock
 from kivy.core.window import Window
 
 
 class NumerologyApp(App):
     def build(self):
-        # Устанавливаем минимальный размер окна для корректного отображения
+        # Устанавливаем минимальный размер окна
         Window.minimum_width = 400
         Window.minimum_height = 600
 
-        sm = ScreenManager(transition=FadeTransition())
+        # Можно выбрать любой переход:
+        # FadeTransition - плавное затухание
+        # SlideTransition - скольжение (можно задать direction)
+        # WipeTransition - вытеснение
+        # CardTransition - эффект карты
+
+        sm = ScreenManager(transition=SlideTransition(duration=0.3))
+
         sm.add_widget(MainMenu(name="main"))
         sm.add_widget(ReportScreen(name="report"))
         sm.add_widget(CompatibilityScreen(name="compatibility"))
         sm.add_widget(HistoryScreen(name="history"))
 
-        # Принудительное обновление макета через небольшую задержку
+        # Принудительное обновление макета
         Clock.schedule_once(lambda dt: self.fix_layout(sm), 0.2)
 
         return sm
 
     def fix_layout(self, sm):
-        """Принудительно обновляет размеры всех экранов"""
         sm.do_layout()
         for screen in sm.screens:
             screen.do_layout()
-        # Принудительно обновляем окно
         Window.update_viewport()
 
 
@@ -57,7 +62,15 @@ NoTransition – без анимации (по умолчанию).
 # source venv/bin/activate
 # python main.py
 
+"""Красивое оформление карточек в истории (сделать их более приятными глазу)
 
+Анимации при переходах между экранами (уже есть FadeTransition, можно добавить эффекты)
+
+Иконки для кнопок (добавить эмодзи или картинки)
+
+Тёмная тема для всех экранов (единый стиль)
+
+Индикатор загрузки при расчёте (если будет долго)"""
 
 
 
