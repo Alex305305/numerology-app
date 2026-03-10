@@ -1,19 +1,19 @@
-from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.screenmanager import Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
-from kivy.animation import Animation
 from kivy.uix.popup import Popup
-from kivy.uix.widget import Widget
-from kivy.app import App
-from core import validate_date, generate_full_report, calculate_life_path, get_compatibility_description
-from kivy.core.window import Window
-from kivy.graphics import Color, Rectangle, RoundedRectangle
-from kivy.utils import get_color_from_hex
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.checkbox import CheckBox
+from kivy.uix.widget import Widget
+from kivy.graphics import Color, Rectangle
+from kivy.utils import get_color_from_hex
+from kivy.app import App
 from kivy.clock import Clock
+from kivy.animation import Animation
+
+from core import validate_date, generate_full_report, calculate_life_path, get_compatibility_description
 from space_background import SpaceBackground
 
 
@@ -31,55 +31,62 @@ class MainMenu(Screen):
             self.dim = Rectangle(size=self.size, pos=self.pos)
         self.bind(size=self._update_dim, pos=self._update_dim)
 
-        # Контейнер для кнопок
-        layout = BoxLayout(orientation='vertical', padding=40, spacing=20)
-        layout.size_hint = (0.8, 0.7)
-        layout.pos_hint = {'center_x': 0.5, 'center_y': 0.5}
+        # Главный контейнер - растягивается на весь экран
+        main_layout = BoxLayout(orientation='vertical', padding=40, spacing=20)
+        main_layout.size_hint = (1, 1)  # Растягиваем на весь экран
 
-        # Заголовок с эффектом свечения
+        # Пустое пространство сверху для центрирования
+        main_layout.add_widget(Widget(size_hint_y=1))
+
+        # Контейнер для кнопок (центрированный)
+        button_container = BoxLayout(
+            orientation='vertical',
+            spacing=20,
+            size_hint=(None, None),
+            size=(400, 400)  # Фиксированный размер контейнера
+        )
+        button_container.pos_hint = {'center_x': 0.5, 'center_y': 0.5}
+
+        # Заголовок
         title = Label(
             text='[color=ffd966]🔮[/color] [color=ffffff]Нумеролог[/color]',
             font_size=48,
             markup=True,
-            size_hint_y=None,
-            height=100
+            size_hint=(None, None),
+            size=(400, 80)
         )
-        layout.add_widget(title)
+        button_container.add_widget(title)
 
         # Кнопки
         buttons = [
-            ("✨ Полный расчёт", "report"),
-            ("💞 Совместимость", "compatibility"),
-            ("📜 История", "history"),
-            ("🌠 Выход", "exit")
+            ("Полный расчёт", "report"),
+            ("Совместимость", "compatibility"),
+            ("История", "history"),
+            ("Выход", "exit")
         ]
 
-        self.buttons = []
         for text, screen in buttons:
             btn = Button(
                 text=text,
-                size_hint_y=None,
-                height=60,
+                size_hint=(None, None),
+                size=(400, 60),
                 font_size=24,
                 background_normal='',
                 background_color=(0.2, 0.1, 0.3, 0.8),
                 color=(1, 1, 0.9, 1)
             )
             btn.bind(on_press=lambda x, s=screen: self.on_press(s))
-            layout.add_widget(btn)
-            self.buttons.append(btn)
+            button_container.add_widget(btn)
 
-        self.add_widget(layout)
+        main_layout.add_widget(button_container)
 
-        # Анимация появления кнопок
-        self.animate_buttons()
+        # Пустое пространство снизу для центрирования
+        main_layout.add_widget(Widget(size_hint_y=1))
 
-    def animate_buttons(self):
-        for i, btn in enumerate(self.buttons):
-            btn.opacity = 0
-            btn.y -= 50
-            anim = Animation(opacity=1, y=btn.y + 50, duration=0.5, t='out_elastic')
-            anim.start(btn)
+        self.add_widget(main_layout)
+
+        # Принудительное обновление макета через небольшую задержку
+        Clock.schedule_once(lambda dt: self.do_layout(), 0.1)
 
     def _update_dim(self, *args):
         self.dim.pos = self.pos
@@ -102,7 +109,6 @@ class StyledButton(Button):
         self.size_hint_y = None
         self.height = 70
 
-# Затем в MainMenu вместо обычных Button используй StyledButton
 
 
 class BaseScreen(Screen):
@@ -147,37 +153,134 @@ class BaseScreen(Screen):
 class HistoryScreen(BaseScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.history = HistoryManager()
 
-        layout = BoxLayout(orientation='vertical', padding=20, spacing=10)
+        # Фон
+        self.background = SpaceBackground()
+        self.add_widget(self.background)
+
+        # Основной контейнер с прозрачным фоном
+        main_layout = BoxLayout(orientation='vertical', padding=20, spacing=10)
 
         # Заголовок
-        layout.add_widget(Label(
+        main_layout.add_widget(Label(
             text="📜 История расчётов",
-            font_size=32,
+            font_size=36,
             size_hint_y=None,
-            height=60
+            height=60,
+            color=(1, 1, 0.8, 1),
+            bold=True
         ))
 
-        # Список истории
-        self.history_list = ListView()
-        layout.add_widget(self.history_list)
+        # Контейнер для списка истории (с прокруткой)
+        scroll = ScrollView()
+        self.history_container = BoxLayout(
+            orientation='vertical',
+            size_hint_y=None,
+            spacing=10,
+            padding=10
+        )
+        self.history_container.bind(minimum_height=self.history_container.setter('height'))
+        scroll.add_widget(self.history_container)
+        main_layout.add_widget(scroll)
+
+        # Кнопка очистки истории
+        clear_btn = Button(
+            text="Очистить историю",
+            size_hint_y=None,
+            height=50,
+            background_color=(0.5, 0.1, 0.1, 0.8),
+            color=(1, 1, 1, 1),
+            font_size=18
+        )
+        clear_btn.bind(on_press=self.clear_history)
+        main_layout.add_widget(clear_btn)
 
         # Кнопка назад
         back_btn = Button(
             text="Назад",
             size_hint_y=None,
-            height=50
+            height=50,
+            background_color=(0.2, 0.1, 0.3, 0.8),
+            color=(1, 1, 0.8, 1),
+            font_size=18
         )
         back_btn.bind(on_press=lambda x: setattr(self.manager, 'current', 'main'))
-        layout.add_widget(back_btn)
+        main_layout.add_widget(back_btn)
 
-        self.add_widget(layout)
+        self.add_widget(main_layout)
+
+    def on_enter(self):
+        """Вызывается при входе на экран"""
         self.load_history()
 
-    def load_history(self):
-        # Здесь будем загружать записи
-        pass
+    def load_history(self, dt=None):
+        """Загружает и отображает историю"""
+        self.history_container.clear_widgets()
+
+        from history import HistoryManager
+        history = HistoryManager()
+        entries = history.get_all()
+
+        if not entries:
+            self.history_container.add_widget(Label(
+                text="История пока пуста\n\nСделайте первый расчёт!",
+                font_size=20,
+                size_hint_y=None,
+                height=100,
+                color=(1, 1, 1, 1)
+            ))
+            return
+
+        for entry in entries:
+            # Простая карточка без canvas
+            card = BoxLayout(
+                orientation='vertical',
+                size_hint_y=None,
+                height=100,
+                spacing=5,
+                padding=10
+            )
+
+            # Информация о записи
+            info_text = f"[b]{entry.get('name', '???')}[/b]  |  {entry.get('birth_date', '???')}  |  {entry.get('timestamp', '???')}"
+            info_label = Label(
+                text=info_text,
+                markup=True,
+                size_hint_y=None,
+                height=40,
+                color=(1, 1, 0.8, 1),
+                halign='left',
+                valign='middle',
+                shorten=True,
+                shorten_from='right'
+            )
+            info_label.bind(size=lambda instance, value: setattr(instance, 'text_size', (value[0] - 20, None)))
+            card.add_widget(info_label)
+
+            # Кнопка просмотра
+            view_btn = Button(
+                text="Просмотреть",
+                size_hint_y=None,
+                height=40,
+                background_color=(0.3, 0.2, 0.5, 1),
+                color=(1, 1, 0.9, 1),
+                font_size=16
+            )
+            view_btn.bind(on_press=lambda btn, r=entry.get('report', ''): self.show_report(r))
+            card.add_widget(view_btn)
+
+            self.history_container.add_widget(card)
+
+    def show_report(self, report):
+        """Показывает сохранённый отчёт"""
+        self.show_popup("Сохранённый расчёт", report)
+
+    def clear_history(self, instance):
+        """Очищает историю"""
+        from history import HistoryManager
+        history = HistoryManager()
+        history.clear()
+        self.load_history()
 
 from space_background import SpaceBackground
 
@@ -288,11 +391,18 @@ class ReportScreen(BaseScreen):
         name = self.name_input.text.strip()
         date = self.date_input.text.strip()
         if not name or not validate_date(date):
-            self.show_popup(" Ошибка", "Введите имя и корректную дату (дд.мм.гггг)")
+            self.show_popup("Ошибка", "Введите имя и корректную дату (дд.мм.гггг)")
             return
-        keep_master = self.master_check.active  # True или False
+
+        keep_master = self.master_check.active if hasattr(self, 'master_check') else True
         report = generate_full_report(date, name, keep_master=keep_master)
-        self.show_popup(" Ваш нумерологический портрет", report)
+
+        # Сохраняем в историю
+        from history import HistoryManager
+        history = HistoryManager()
+        history.add(name, date, report)
+
+        self.show_popup("Ваш нумерологический портрет", report)
 
 class CompatibilityScreen(BaseScreen):
     def __init__(self, **kwargs):
