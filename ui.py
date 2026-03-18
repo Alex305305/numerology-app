@@ -13,9 +13,9 @@ from kivy.utils import get_color_from_hex
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.animation import Animation
+from premium_manager import SubscriptionManager # добавить эту строку
 
-from core import validate_date, generate_full_report, calculate_life_path, get_compatibility_description
-from space_background import SpaceBackground
+from core import validate_date, generate_full_report
 
 
 class MainMenu(Screen):
@@ -60,10 +60,11 @@ class MainMenu(Screen):
 
         # Кнопки
         buttons = [
-            ("Полный расчёт", "report"),
-            ("Совместимость", "compatibility"),
-            ("История", "history"),
-            ("Выход", "exit")
+            ("✨ Полный расчёт", "report"),
+            ("💞 Совместимость", "compatibility"),
+            ("📜 История", "history"),
+            ("🔮 Прогнозы", "profile"),  # Новая кнопка
+            ("🌠 Выход", "exit")
         ]
 
         for text, screen in buttons:
@@ -373,6 +374,9 @@ class ReportScreen(BaseScreen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        # Проверяем подписку
+        self.premium = SubscriptionManager()
+
         # 1. Космический фон
         self.background = SpaceBackground()
         self.add_widget(self.background)
@@ -453,6 +457,24 @@ class ReportScreen(BaseScreen):
         btn_back.bind(on_press=lambda x: setattr(self.manager, 'current', 'main'))
         layout.add_widget(btn_back)
 
+        # Премиум блок (если нет подписки)
+        if not self.premium.is_premium():
+            premium_box = BoxLayout(size_hint_y=None, height=60, spacing=10)
+            premium_box.add_widget(Label(
+                text="🔮 Хотите прогнозы на каждый день?",
+                color=(1, 1, 0.8, 1),
+                font_size=16
+            ))
+            premium_btn = Button(
+                text="Премиум",
+                size_hint_x=0.3,
+                background_color=(0.5, 0.3, 0.7, 1),
+                color=(1, 1, 1, 1)
+            )
+            premium_btn.bind(on_press=self.show_premium_popup)
+            premium_box.add_widget(premium_btn)
+            layout.add_widget(premium_box)
+
         # Строка с чекбоксом
         box_master = BoxLayout(orientation='horizontal', size_hint_y=None, height=50)
         box_master.add_widget(Label(
@@ -465,6 +487,118 @@ class ReportScreen(BaseScreen):
         layout.add_widget(box_master)
 
         self.add_widget(layout)
+
+    def show_premium_popup(self, instance):
+        """Показывает окно с преимуществами премиум"""
+        from kivy.uix.popup import Popup
+        from kivy.uix.boxlayout import BoxLayout
+        from kivy.uix.label import Label
+        from kivy.uix.button import Button
+
+        content = BoxLayout(orientation='vertical', padding=20, spacing=15)
+
+        content.add_widget(Label(
+            text="✨ Премиум прогнозы ✨",
+            font_size=24,
+            color=(1, 0.9, 0.6, 1),
+            size_hint_y=None,
+            height=50
+        ))
+
+        features = BoxLayout(orientation='vertical', size_hint_y=None, height=200, spacing=10)
+
+        features.add_widget(Label(
+            text="✅ Ежедневные прогнозы",
+            halign='left',
+            color=(1, 1, 1, 1)
+        ))
+        features.add_widget(Label(
+            text="✅ Учет времени рождения",
+            halign='left',
+            color=(1, 1, 1, 1)
+        ))
+        features.add_widget(Label(
+            text="✅ Карьера, любовь, здоровье",
+            halign='left',
+            color=(1, 1, 1, 1)
+        ))
+        features.add_widget(Label(
+            text="✅ Благоприятные часы",
+            halign='left',
+            color=(1, 1, 1, 1)
+        ))
+        features.add_widget(Label(
+            text="✅ Еженедельные прогнозы",
+            halign='left',
+            color=(1, 1, 1, 1)
+        ))
+
+        content.add_widget(features)
+
+        price_label = Label(
+            text="199 ₽/месяц",
+            font_size=20,
+            color=(1, 0.8, 0.4, 1),
+            size_hint_y=None,
+            height=40
+        )
+        content.add_widget(price_label)
+
+        buttons = BoxLayout(size_hint_y=None, height=100, spacing=10)
+
+        subscribe_btn = Button(
+            text="Подписаться",
+            background_color=(0.3, 0.6, 0.3, 1),
+            size_hint_x=0.5
+        )
+        subscribe_btn.bind(on_press=self.activate_premium)
+
+        cancel_btn = Button(
+            text="Позже",
+            background_color=(0.5, 0.2, 0.2, 1),
+            size_hint_x=0.5
+        )
+
+        buttons.add_widget(subscribe_btn)
+        buttons.add_widget(cancel_btn)
+        content.add_widget(buttons)
+
+        popup = Popup(
+            title="",
+            content=content,
+            size_hint=(0.8, 0.7)
+        )
+        cancel_btn.bind(on_press=popup.dismiss)
+        popup.open()
+
+    def activate_premium(self, instance):
+        """Активация премиум подписки"""
+        from premium_manager import SubscriptionManager
+        pm = SubscriptionManager()
+        pm.activate_premium(1)
+
+        # Закрываем текущий попап
+        instance.parent.parent.parent.dismiss()
+
+        # Показываем успех
+        from kivy.uix.popup import Popup
+        from kivy.uix.label import Label
+        success_popup = Popup(
+            title="Успешно!",
+            content=Label(text="Премиум активирован!\nТеперь вам доступны прогнозы."),
+            size_hint=(0.6, 0.4)
+        )
+        success_popup.open()
+
+        # Обновляем интерфейс
+        from kivy.clock import Clock
+        Clock.schedule_once(lambda dt: self.update_premium_ui(), 0.5)
+
+    def update_premium_ui(self):
+        """Обновляет интерфейс после активации премиум"""
+        # Перезагружаем экран
+        self.manager.current = 'report'
+
 
     def calculate_with_loading(self, instance):
         """Показывает индикатор загрузки и выполняет расчёт"""
@@ -539,6 +673,133 @@ class ReportScreen(BaseScreen):
         history.add(name, date, report)
 
         self.show_popup("Ваш нумерологический портрет", report)
+
+        # Добавляем блок с премиум предложением внизу
+        premium_box = BoxLayout(size_hint_y=None, height=60, spacing=10)
+        premium_box.add_widget(Label(
+            text="🔮 Хотите прогнозы на каждый день?",
+            color=(1, 1, 0.8, 1),
+            font_size=16
+        ))
+        premium_btn = Button(
+            text="Премиум",
+            size_hint_x=0.3,
+            background_color=(0.5, 0.3, 0.7, 1),
+            color=(1, 1, 1, 1)
+        )
+        premium_btn.bind(on_press=self.show_premium_popup)
+        premium_box.add_widget(premium_btn)
+
+        # Добавляем после кнопки "Назад"
+        layout.add_widget(premium_box)
+
+
+    def show_premium_popup(self, instance):
+        """Показывает окно с преимуществами премиум"""
+        content = BoxLayout(orientation='vertical', padding=20, spacing=15)
+
+        content.add_widget(Label(
+            text="✨ Премиум прогнозы ✨",
+            font_size=24,
+            color=(1, 0.9, 0.6, 1),
+            size_hint_y=None,
+            height=50
+        ))
+
+        features = BoxLayout(orientation='vertical', size_hint_y=None, height=200, spacing=10)
+
+        features.add_widget(Label(
+            text="✅ Ежедневные прогнозы с учетом времени рождения",
+            halign='left',
+            color=(1, 1, 1, 1)
+        ))
+        features.add_widget(Label(
+            text="✅ Детальный разбор карьеры, любви, здоровья",
+            halign='left',
+            color=(1, 1, 1, 1)
+        ))
+        features.add_widget(Label(
+            text="✅ Благоприятные часы для важных дел",
+            halign='left',
+            color=(1, 1, 1, 1)
+        ))
+        features.add_widget(Label(
+            text="✅ Еженедельные и ежемесячные прогнозы",
+            halign='left',
+            color=(1, 1, 1, 1)
+        ))
+        features.add_widget(Label(
+            text="✅ Push-уведомления с прогнозом на день",
+            halign='left',
+            color=(1, 1, 1, 1)
+        ))
+
+        content.add_widget(features)
+
+        price_label = Label(
+            text="199 ₽/месяц",
+            font_size=20,
+            color=(1, 0.8, 0.4, 1),
+            size_hint_y=None,
+            height=40
+        )
+        content.add_widget(price_label)
+
+        buttons = BoxLayout(size_hint_y=None, height=100, spacing=10)
+
+        subscribe_btn = Button(
+            text="Подписаться",
+            background_color=(0.3, 0.6, 0.3, 1),
+            size_hint_x=0.5
+        )
+        subscribe_btn.bind(on_press=self.activate_premium)
+
+        cancel_btn = Button(
+            text="Позже",
+            background_color=(0.5, 0.2, 0.2, 1),
+            size_hint_x=0.5
+        )
+
+        buttons.add_widget(subscribe_btn)
+        buttons.add_widget(cancel_btn)
+        content.add_widget(buttons)
+
+        popup = Popup(
+            title="",
+            content=content,
+            size_hint=(0.8, 0.7)
+        )
+        cancel_btn.bind(on_press=popup.dismiss)
+        popup.open()
+
+
+    def activate_premium(self, instance):
+        """Активация премиум подписки"""
+        from premium_manager import SubscriptionManager
+        sub = SubscriptionManager()
+        sub.activate_premium()
+
+        # Закрываем текущий попап
+        instance.parent.parent.parent.dismiss()
+
+        # Показываем успех
+        success_popup = Popup(
+            title="Успешно!",
+            content=Label(text="Премиум активирован!\nТеперь вам доступны прогнозы."),
+            size_hint=(0.6, 0.4)
+        )
+        success_popup.open()
+
+        # Обновляем интерфейс
+        Clock.schedule_once(lambda dt: self.update_premium_ui(), 0.5)
+
+
+    def update_premium_ui(self):
+        """Обновляет интерфейс после активации премиум"""
+        # Здесь можно добавить обновление кнопок и т.д.
+        pass
+
+
 
 class CompatibilityScreen(BaseScreen):
     def __init__(self, **kwargs):
