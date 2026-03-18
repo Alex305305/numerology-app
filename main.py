@@ -51,16 +51,6 @@ if __name__ == "__main__":
     NumerologyApp().run()
 
 
-# cd /home/stalin/EGOROV/numerology_app
-# source venv/bin/activate
-# python main.py
-
-# cd /home/stalin/EGOROV/numerology_app
-# source venv/bin/activate
-# export DEEPSEEK_API_KEY='sk-RXizqMLxLyPfPulrWnjaf3AKSdHPu0WF'
-# python test_deepseek.py
-# sk-RXizqMLxLyPfPulrWnjaf3AKSdHPu0WF
-
 
 #cd /home/stalin/EGOROV/numerology_app
 # source venv/bin/activate
