@@ -5,6 +5,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 from kivy.uix.button import Button
+import json
 
 
 class ProfileScreen(Screen):
@@ -43,27 +44,19 @@ class ProfileScreen(Screen):
         self.add_widget(layout)
 
     def get_prediction(self, instance):
-        """Собирает данные и переходит к прогнозу"""
-        # Проверяем, заполнены ли обязательные поля
         if not self.name_input.text or not self.date_input.text:
-            # Можно показать всплывающее окно с ошибкой
             return
-
-        # Собираем данные пользователя
         user_data = {
             'name': self.name_input.text,
             'birth_date': self.date_input.text,
-            'birth_time': self.time_input.text if self.time_input.text else None,
-            'birth_place': self.place_input.text if self.place_input.text else None,
-            'profession': self.profession_input.text if self.profession_input.text else "не указана",
-            'relationship_status': self.status_input.text if self.status_input.text else "не указано"
+            'birth_time': self.time_input.text or None,
+            'birth_place': self.place_input.text or None,
+            'profession': self.profession_input.text or "не указана",
+            'relationship_status': self.status_input.text or "не указано"
         }
-
-        # Передаем данные на экран прогнозов
-        predictions_screen = self.manager.get_screen('premium_predictions')
-        predictions_screen.user_data = user_data
-
-        # Переходим к прогнозу
+        pred_screen = self.manager.get_screen('premium_predictions')
+        pred_screen.user_data = user_data
+        pred_screen.numerology = pred_screen._calculate_user_numerology()
         self.manager.current = 'premium_predictions'
 
     def save_profile(self, instance):

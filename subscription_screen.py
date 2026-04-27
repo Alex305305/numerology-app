@@ -88,5 +88,5 @@ class SubscriptionScreen(Screen):
         )
         popup.open()
 
-        # Возвращаемся в меню
-        Clock.schedule_once(lambda dt: setattr(self.manager, 'current', 'main'), 2)
+        # После успешной активации
+        Clock.schedule_once(lambda dt: setattr(self.manager, 'current', 'premium_predictions'), 1)

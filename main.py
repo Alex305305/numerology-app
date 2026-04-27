@@ -1,3 +1,5 @@
+# main.py
+
 from kivy.app import App
 from ui import MainMenu, ReportScreen, CompatibilityScreen, HistoryScreen
 from premium_predictions import PremiumPredictionsScreen
@@ -20,21 +22,11 @@ class NumerologyApp(App):
         sm.add_widget(ReportScreen(name="report"))
         sm.add_widget(CompatibilityScreen(name="compatibility"))
         sm.add_widget(HistoryScreen(name="history"))
-        sm.add_widget(ProfileScreen(name="profile"))  # Добавить экран
+        sm.add_widget(ProfileScreen(name="profile"))
+
+
+        # Премиум экраны
         sm.add_widget(PremiumPredictionsScreen(user_data={}, name="premium_predictions"))
-
-        # Тестовые данные для премиум экрана
-        test_user_data = {
-            'name': 'Тестовый пользователь',
-            'birth_date': '01.01.2000',
-            'is_premium': False
-        }
-
-        # Премиум экраны с передачей данных
-        sm.add_widget(PremiumPredictionsScreen(
-            user_data=test_user_data,
-            name="premium_predictions"
-        ))
         sm.add_widget(SubscriptionScreen(name="subscription"))
 
         Clock.schedule_once(lambda dt: self.fix_layout(sm), 0.2)
@@ -52,6 +44,7 @@ if __name__ == "__main__":
 
 
 
-#cd /home/stalin/EGOROV/numerology_app
+# cd /home/stalin/EGOROV/numerology_app
 # source venv/bin/activate
+# export DEEPSEEK_API_KEY='твой_ключ'
 # python main.py
